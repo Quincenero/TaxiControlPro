@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import AuthLayout from "@/layouts/AuthLayout/AuthLayout";
-
 import Card from "@/components/ui/Card/Card";
 import Logo from "@/components/ui/Logo/Logo";
 import Input from "@/components/ui/Input/Input";
@@ -19,10 +18,10 @@ function Register() {
   });
 
   const [errors, setErrors] = useState({});
+  const navigate = useNavigate();
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -35,28 +34,22 @@ function Register() {
     if (!formData.nombre.trim()) {
       newErrors.nombre = "El nombre es obligatorio";
     }
-
     if (!formData.apellido.trim()) {
       newErrors.apellido = "El apellido es obligatorio";
     }
-
     if (!formData.email.trim()) {
       newErrors.email = "El email es obligatorio";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-  newErrors.email = "Ingresá un email válido";
-}
-
+      newErrors.email = "Ingresá un email válido";
+    }
     if (!formData.telefono.trim()) {
       newErrors.telefono = "El teléfono es obligatorio";
     }
-
     if (!formData.password) {
       newErrors.password = "La contraseña es obligatoria";
     } else if (formData.password.length < 8) {
-      newErrors.password =
-        "La contraseña debe tener al menos 8 caracteres";
+      newErrors.password = "La contraseña debe tener al menos 8 caracteres";
     }
-
     if (!formData.confirmPassword) {
       newErrors.confirmPassword = "Repetí la contraseña";
     } else if (formData.password !== formData.confirmPassword) {
@@ -64,114 +57,72 @@ function Register() {
     }
 
     setErrors(newErrors);
-
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     const isValid = validateForm();
+    if (!isValid) return;
 
-    if (!isValid) {
-      return;
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert(data.message);
+        navigate("/login"); // redirige al login después de registrarse
+      } else {
+        alert(data.error);
+      }
+    } catch (error) {
+      console.error("Error en el registro:", error);
     }
-
-    console.log("Datos de registro:", formData);
   };
 
   return (
     <AuthLayout>
       <Card header={<Logo />}>
         <h2>Crear cuenta</h2>
-
-        <p>
-          Registrate para comenzar a usar Taxi Control Pro.
-        </p>
+        <p>Registrate para comenzar a usar Taxi Control Pro.</p>
 
         <form onSubmit={handleSubmit} noValidate>
-          <Input
-            id="nombre"
-            label="Nombre"
-            name="nombre"
-            type="text"
-            value={formData.nombre}
-            onChange={handleChange}
-            placeholder="Ingresá tu nombre"
-            error={errors.nombre}
-            
-          />
+          <Input id="nombre" label="Nombre" name="nombre" type="text"
+            value={formData.nombre} onChange={handleChange}
+            placeholder="Ingresá tu nombre" error={errors.nombre} />
 
-          <Input
-            id="apellido"
-            label="Apellido"
-            name="apellido"
-            type="text"
-            value={formData.apellido}
-            onChange={handleChange}
-            placeholder="Ingresá tu apellido"
-            error={errors.apellido}
-            
-          />
+          <Input id="apellido" label="Apellido" name="apellido" type="text"
+            value={formData.apellido} onChange={handleChange}
+            placeholder="Ingresá tu apellido" error={errors.apellido} />
 
-          <Input
-            id="email"
-            label="Email"
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={handleChange}
-            placeholder="Ingresá tu email"
-            error={errors.email}
-           
-          />
+          <Input id="email" label="Email" name="email" type="email"
+            value={formData.email} onChange={handleChange}
+            placeholder="Ingresá tu email" error={errors.email} />
 
-          <Input
-            id="telefono"
-            label="Teléfono"
-            name="telefono"
-            type="tel"
-            value={formData.telefono}
-            onChange={handleChange}
-            placeholder="Ingresá tu teléfono"
-            error={errors.telefono}
-            
-          />
+          <Input id="telefono" label="Teléfono" name="telefono" type="tel"
+            value={formData.telefono} onChange={handleChange}
+            placeholder="Ingresá tu teléfono" error={errors.telefono} />
 
-          <Input
-            id="password"
-            label="Contraseña"
-            name="password"
-            type="password"
-            value={formData.password}
-            onChange={handleChange}
-            placeholder="Ingresá una contraseña"
-            error={errors.password}
-            
-          />
+          <Input id="password" label="Contraseña" name="password" type="password"
+            value={formData.password} onChange={handleChange}
+            placeholder="Ingresá una contraseña" error={errors.password} />
 
-          <Input
-            id="confirmPassword"
-            label="Repetir contraseña"
-            name="confirmPassword"
-            type="password"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            placeholder="Repetí tu contraseña"
-            error={errors.confirmPassword}
-            
-          />
+          <Input id="confirmPassword" label="Repetir contraseña" name="confirmPassword" type="password"
+            value={formData.confirmPassword} onChange={handleChange}
+            placeholder="Repetí tu contraseña" error={errors.confirmPassword} />
 
-          <Button type="submit">
-            Crear cuenta
-          </Button>
+          <Button type="submit">Crear cuenta</Button>
         </form>
 
         <p>
           ¿Ya tenés una cuenta?{" "}
-          <Link to="/login">
-            Iniciar sesión
-          </Link>
+          <Link to="/login">Iniciar sesión</Link>
         </p>
       </Card>
     </AuthLayout>
