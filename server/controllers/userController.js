@@ -1,72 +1,51 @@
-const { User } = require('../models');
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 
-// Crear usuario (Admin)
-exports.crearUsuario = async (req, res) => {
-  try {
-    const { nombre, apellido, telefono, email, password, rol } = req.body;
+const userSchema = new mongoose.Schema({
+  nombre: { type: String, required: true },
+  apellido: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  telefono: { type: String, required: true },
+  password: { type: String, required: true, select: false },
+  direccion: {
+    calle: { type: String, required: true },
+    numero: { type: String, required: true },
+    ciudad: { type: String, required: true },
+    provincia: { type: String, required: true },
+    codigoPostal: { type: String, required: true }
+  },
+  tipoDocumento: { type: String, default: "DNI" },
+  numeroDocumento: { type: String, required: true, unique: true },
+  fechaNacimiento: { type: Date, required: true },
+  rol: { type: String, enum: ["admin", "usuario", "conductor"], default: "usuario" },
+  activo: { type: Boolean, default: true },
+  ultimoAcceso: { type: Date, default: Date.now },
 
-    const usuarioExistente = await User.findOne({ email });
-    if (usuarioExistente) {
-      return res.status(400).json({
-        success: false,
-        message: "El usuario ya existe"
-      });
-    }
+  // Campos para reset password
+  resetPasswordToken: { type: String },
+  resetPasswordExpire: { type: Date }
+}, { timestamps: true });
 
-    const usuario = await User.create({ nombre, apellido, telefono, email, password, rol });
+// Hash password antes de guardar
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+  next();
+});
 
-    res.status(201).json({
-      success: true,
-      message: "Usuario creado exitosamente",
-      data: usuario
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
+// Comparar contraseñas
+userSchema.methods.comparePassword = async function (password) {
+  return await bcrypt.compare(password, this.password);
 };
 
-// Actualizar usuario por ID
-exports.actualizarUsuario = async (req, res) => {
-  try {
-    const usuario = await User.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true
-    }).select('-password');
-
-    if (!usuario) {
-      return res.status(404).json({
-        success: false,
-        message: "Usuario no encontrado"
-      });
-    }
-
-    res.json({
-      success: true,
-      message: "Usuario actualizado",
-      data: usuario
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
+// Generar token de reseteo
+userSchema.methods.getResetPasswordToken = function () {
+  const resetToken = crypto.randomBytes(20).toString("hex");
+  this.resetPasswordToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+  this.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutos
+  return resetToken;
 };
 
-// Eliminar usuario por ID
-exports.eliminarUsuario = async (req, res) => {
-  try {
-    const usuario = await User.findByIdAndDelete(req.params.id);
-
-    if (!usuario) {
-      return res.status(404).json({
-        success: false,
-        message: "Usuario no encontrado"
-      });
-    }
-
-    res.json({
-      success: true,
-      message: "Usuario eliminado"
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
+module.exports = mongoose.model("User", userSchema);

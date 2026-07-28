@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 
 const userSchema = new mongoose.Schema({
   nombre: { 
@@ -65,11 +66,19 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  resetPasswordToken: { 
+    type: String 
+  },
+  resetPasswordExpire: { 
+    type: Date 
+  },
+
   ultimoAcceso: {
     type: Date,
     default: Date.now
   }
-}, { 
+  
+  }, { 
   timestamps: true 
 });
 
@@ -92,6 +101,16 @@ userSchema.methods.toJSON = function() {
   delete user.password;
   delete user.__v;
   return user;
+};
+
+// Generar token de resteo en el modo user
+userSchema.methods.getResetPasswordToken = function () {
+  const resetToken = crypto.randomBytes(20).toString("hex");
+
+  this.resetPasswordToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+  this.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutos
+
+  return resetToken;
 };
 
 module.exports = mongoose.model("User", userSchema);

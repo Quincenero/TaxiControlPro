@@ -18,7 +18,7 @@ app.get("/", (req, res) => {
   res.json({ message: "Taxi Control Pro API funcionando 🚕" });
 });
 
-// Middleware de errores (siempre al final)
+// Middleware de errores
 const errorHandler = require("./middlewares/errorHandler");
 app.use(errorHandler);
 

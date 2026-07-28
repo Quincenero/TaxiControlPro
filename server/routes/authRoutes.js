@@ -7,6 +7,8 @@ const { User } = require("../models");
 // Rutas públicas
 router.post("/login", authController.login);
 router.post("/register", authController.register);
+router.post("/forgotPassword", authController.forgotPassword);
+router.put("/resetPassword/:token", authController.resetPassword);
 
 // Rutas protegidas
 router.get("/profile", proteger, async (req, res, next) => {
