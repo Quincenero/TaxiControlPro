@@ -39,6 +39,7 @@ const proteger = async (req, res, next) => {
     req.user = usuario;
     next();
   } catch (error) {
+       console.log(error.message);
     return res.status(401).json({
       success: false,
       message: "Token inválido o expirado",

@@ -10,34 +10,44 @@ exports.register = async (req, res, next) => {
     const {
       nombre,
       apellido,
+      username,
       telefono,
       email,
       password,
       direccion,
-      tipoDocumento,
-      numeroDocumento,
+      documento,
       fechaNacimiento,
       rol
     } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ success: false, message: "Email y contraseña son requeridos" });
+      return res.status(400).json({ 
+        success: false, 
+        message: "Email y contraseña son requeridos" });
     }
 
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ 
+      $or: [
+        { email },
+        {username }
+      ] 
+      
+    });
     if (existingUser) {
-      return res.status(400).json({ success: false, message: "El usuario ya existe" });
+      return res.status(400).json({ 
+        success: false, 
+        message: "El usuario ya existe" });
     }
 
     const user = await User.create({
       nombre,
       apellido,
+      username,
       telefono,
       email,
       password,
       direccion,
-      tipoDocumento,
-      numeroDocumento,
+      documento,
       fechaNacimiento,
       rol
     });
@@ -52,7 +62,7 @@ exports.register = async (req, res, next) => {
       success: true,
       message: "Usuario registrado exitosamente 🚖",
       token,
-      user: { id: user._id, email: user.email }
+      user
     });
   } catch (err) {
     next(err);
@@ -66,25 +76,38 @@ exports.login = async (req, res, next) => {
 
     const user = await User.findOne({ email }).select("+password");
     if (!user) {
-      return res.status(400).json({ success: false, message: "Usuario no encontrado" });
+      return res.status(400).json({ 
+        success: false, 
+        message: "Usuario no encontrado" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ success: false, message: "Contraseña incorrecta" });
-    }
+      return res.status(400).json({ 
+        success: false, 
+        message: "Contraseña incorrecta" 
+      });
+     }
+     // Actualiza ultimo acceso
+    user.ultimoAcceso = new Date();
+    await user.save();
+   
 
     const token = jwt.sign(
-      { id: user._id, email: user.email },
+      { id: user._id, 
+        email: user.email, 
+        rol: user.rol,
+        username:user.username
+      },
       process.env.JWT_SECRET,
-      { expiresIn: "1h" }
+      { expiresIn: process.env.JWT_EXPIRE }
     );
 
     res.json({
       success: true,
       message: "Login exitoso 🚖",
       token,
-      user: { id: user._id, email: user.email }
+      user
     });
   } catch (err) {
     next(err);
@@ -138,7 +161,7 @@ exports.resetPassword = async (req, res, next) => {
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
 
-    await user.save({ validateBeforeSave: false }); // guardar solo contraseña
+    await user.save(); // guardar solo contraseña
 
     res.json({ success: true, message: "Contraseña actualizada correctamente" });
   } catch (err) {
