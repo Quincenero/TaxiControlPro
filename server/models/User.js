@@ -17,6 +17,19 @@ const userSchema = new mongoose.Schema({
     minlength: [2, "El apellido debe tener al menos 2 caracteres"],
     maxlength: [50, "El apellido no debe exceder 50 caracteres"] 
   },
+  username: {
+  type: String,
+  required: [true, "El nombre de usuario es obligatorio"],
+  unique: true,
+  trim: true,
+  lowercase: true,
+  minlength: [4, "Debe tener al menos 4 caracteres"],
+  maxlength: [20, "No puede superar los 20 caracteres"],
+  match: [
+    /^[a-zA-Z0-9._-]{4,20}$/,
+    "Solo se permiten letras, números, punto, guion y guion bajo"
+  ]
+},
   email: { 
     type: String, 
     required: [true, "El email es obligatorio"],
@@ -30,28 +43,33 @@ const userSchema = new mongoose.Schema({
     required: [true, "El teléfono es obligatorio"],
     match: [/^\d{10,15}$/, "Ingresa un número de teléfono válido"]
   },
-  password: { 
-    type: String, 
+  password: {
+    type: String,
     required: [true, "La contraseña es obligatoria"],
-    minlength: [6, "La contraseña debe tener al menos 6 caracteres"],
+    minlength: [8, "Debe tener al menos 8 caracteres"],
+    maxlength: [64, "No puede superar los 64 caracteres"],
+    match: [
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,64}$/,
+      "Debe contener una mayúscula, una minúscula, un número y un carácter especial."
+    ],
     select: false
   },
-  direccion:{
-    calle: { type:String, required:true},
-    numero: { type:String, required:true},
-    ciudad: {type:String, required:true},
-    provincia: {type:String, required:true},
-    codigoPostal: {type:String, required:true}
+  direccion: {
+    calle: String,
+    numero: String,
+    ciudad: String,
+    provincia: String,
+    codigoPostal: String
   },
-  tipoDocumento: {
-    type: String,
-    enum: ['DNI', 'Pasaporte', 'Cédula', 'Otro'],
-    default: 'DNI'
-  },
-  numeroDocumento: {
-    type: String,
-    required: true,
-    unique: true
+  documento: {
+    tipo: {
+      type: String,
+      default: 'DNI'
+    },
+    numero: {
+      type: String,
+      unique: true
+    }
   },
   fechaNacimiento: {
     type: Date,
@@ -59,12 +77,19 @@ const userSchema = new mongoose.Schema({
   },
   rol: {
     type: String,
-    enum: ["admin", "usuario", "conductor"],
+    enum: ["admin", 
+        "usuario", 
+        "conductor"
+      ],
     default: "usuario"
   },
   activo: {
     type: Boolean,
     default: true
+  },
+  avatar:{
+    type: String,
+    default:""
   },
   resetPasswordToken: { 
     type: String 
@@ -75,7 +100,7 @@ const userSchema = new mongoose.Schema({
 
   ultimoAcceso: {
     type: Date,
-    default: Date.now
+    default: null
   }
   
   }, { 
@@ -84,8 +109,9 @@ const userSchema = new mongoose.Schema({
 
 // Hash password antes de guardar
 userSchema.pre('save', async function(){
-  if (!this.isModified('password')) return ;
-
+  if (!this.isModified('password')) {
+    return ;
+  }
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
 });

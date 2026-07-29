@@ -1,32 +1,76 @@
-
 const mongoose = require("mongoose");
 
 const errorHandler = (err, req, res, next) => {
-  console.error("Error capturado:", err);
+  console.error("❌ Error capturado:", err);
 
-  // Errores de validación de Mongoose
+  // Código HTTP por defecto
+  let statusCode = err.statusCode || 500;
+
+  // Mensaje por defecto
+  let message =
+    process.env.NODE_ENV === "development"
+      ? err.message
+      : "Error interno del servidor";
+
+  // ==========================
+  // Error de validación de Mongoose
+  // ==========================
   if (err instanceof mongoose.Error.ValidationError) {
-    const errors = Object.values(err.errors).map(e => e.message);
     return res.status(400).json({
       success: false,
       message: "Error de validación",
-      errors
+      errors: Object.values(err.errors).map((e) => e.message),
     });
   }
 
-  // Error de duplicado (unique index)
+  // ==========================
+  // Error de índice único
+  // ==========================
   if (err.code === 11000) {
     const field = Object.keys(err.keyValue)[0];
+
     return res.status(400).json({
       success: false,
-      message: `El valor para '${field}' ya existe`
+      message: `El valor '${err.keyValue[field]}' ya existe para el campo '${field}'.`,
     });
   }
 
-  // Otros errores
-  res.status(500).json({
+  // ==========================
+  // ObjectId inválido
+  // ==========================
+  if (err.name === "CastError") {
+    return res.status(400).json({
+      success: false,
+      message: "ID inválido.",
+    });
+  }
+
+  // ==========================
+  // JWT inválido
+  // ==========================
+  if (err.name === "JsonWebTokenError") {
+    return res.status(401).json({
+      success: false,
+      message: "Token inválido.",
+    });
+  }
+
+  // ==========================
+  // JWT expirado
+  // ==========================
+  if (err.name === "TokenExpiredError") {
+    return res.status(401).json({
+      success: false,
+      message: "La sesión ha expirado. Inicie sesión nuevamente.",
+    });
+  }
+
+  // ==========================
+  // Respuesta general
+  // ==========================
+  res.status(statusCode).json({
     success: false,
-    message: err.message || "Error interno del servidor"
+    message,
   });
 };
 
