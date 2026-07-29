@@ -9,11 +9,12 @@ router.post("/login", authController.login);
 router.post("/register", authController.register);
 router.post("/forgotPassword", authController.forgotPassword);
 router.put("/resetPassword/:token", authController.resetPassword);
+router.get("/me", proteger, authController.me);
 
 // Rutas protegidas
 router.get("/profile", proteger, async (req, res, next) => {
   try {
-    const usuario = await User.findById(req.user.id).select("-password");
+    const usuario = await User.findById(req.user._id);
     if (!usuario) {
       return res.status(404).json({ success: false, message: "Usuario no encontrado" });
     }

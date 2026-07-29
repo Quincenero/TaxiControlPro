@@ -68,7 +68,8 @@ const userSchema = new mongoose.Schema({
     },
     numero: {
       type: String,
-      unique: true
+      unique: true,
+      required: true
     }
   },
   fechaNacimiento: {

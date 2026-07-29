@@ -69,6 +69,18 @@ exports.register = async (req, res, next) => {
   }
 };
 
+// Obtener usuario autenticado
+exports.me = async (req, res, next) => {
+  try {
+    res.json({
+      success: true,
+      user: req.user
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // Login de usuarios
 exports.login = async (req, res, next) => {
   try {
