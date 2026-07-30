@@ -76,13 +76,29 @@ const userSchema = new mongoose.Schema({
     type: Date,
     required: true
   },
+  licencia: {
+    numero: {
+      type: String,
+      trim: true
+    },
+    categoria: {
+      type: String,
+      trim: true
+    },
+    fechaEmision: {
+      type: Date
+    },
+    fechaVencimiento: {
+      type: Date
+    }
+  },
   rol: {
     type: String,
     enum: ["admin", 
-        "usuario", 
+        "usuario",
         "conductor"
       ],
-    default: "usuario"
+    default: "conductor"
   },
   activo: {
     type: Boolean,
@@ -101,7 +117,7 @@ const userSchema = new mongoose.Schema({
 
   ultimoAcceso: {
     type: Date,
-    default: null
+    default: Date.now
   }
   
   }, { 
@@ -111,7 +127,7 @@ const userSchema = new mongoose.Schema({
 // Hash password antes de guardar
 userSchema.pre('save', async function(){
   if (!this.isModified('password')) {
-    return ;
+    return next();
   }
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
@@ -134,7 +150,11 @@ userSchema.methods.toJSON = function() {
 userSchema.methods.getResetPasswordToken = function () {
   const resetToken = crypto.randomBytes(20).toString("hex");
 
-  this.resetPasswordToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+  this.resetPasswordToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+    
   this.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutos
 
   return resetToken;

@@ -1,51 +1,49 @@
-const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
-const crypto = require("crypto");
+const User = require("../models/User");
 
-const userSchema = new mongoose.Schema({
-  nombre: { type: String, required: true },
-  apellido: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  telefono: { type: String, required: true },
-  password: { type: String, required: true, select: false },
-  direccion: {
-    calle: { type: String, required: true },
-    numero: { type: String, required: true },
-    ciudad: { type: String, required: true },
-    provincia: { type: String, required: true },
-    codigoPostal: { type: String, required: true }
-  },
-  tipoDocumento: { type: String, default: "DNI" },
-  numeroDocumento: { type: String, required: true, unique: true },
-  fechaNacimiento: { type: Date, required: true },
-  rol: { type: String, enum: ["admin", "usuario", "conductor"], default: "usuario" },
-  activo: { type: Boolean, default: true },
-  ultimoAcceso: { type: Date, default: Date.now },
+// Obtener perfil del usuario autenticado
+exports.getProfile = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id);
 
-  // Campos para reset password
-  resetPasswordToken: { type: String },
-  resetPasswordExpire: { type: Date }
-}, { timestamps: true });
-
-// Hash password antes de guardar
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
-});
-
-// Comparar contraseñas
-userSchema.methods.comparePassword = async function (password) {
-  return await bcrypt.compare(password, this.password);
+    res.status(200).json({
+      success: true,
+      user,
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
-// Generar token de reseteo
-userSchema.methods.getResetPasswordToken = function () {
-  const resetToken = crypto.randomBytes(20).toString("hex");
-  this.resetPasswordToken = crypto.createHash("sha256").update(resetToken).digest("hex");
-  this.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutos
-  return resetToken;
-};
+// Actualizar perfil
+exports.updateProfile = async (req, res, next) => {
+  try {
+    const camposPermitidos = {
+      nombre: req.body.nombre,
+      apellido: req.body.apellido,
+      username: req.body.username,
+      telefono: req.body.telefono,
+      direccion: req.body.direccion,
+      documento: req.body.documento,
+      fechaNacimiento: req.body.fechaNacimiento,
+      licencia: req.body.licencia,
+      avatar: req.body.avatar,
+    };
 
-module.exports = mongoose.model("User", userSchema);
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      camposPermitidos,
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Perfil actualizado correctamente",
+      user,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

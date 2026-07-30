@@ -49,7 +49,6 @@ exports.register = async (req, res, next) => {
       direccion,
       documento,
       fechaNacimiento,
-      rol
     });
 
     const token = jwt.sign(

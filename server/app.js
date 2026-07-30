@@ -11,7 +11,10 @@ app.use(morgan("dev"));
 
 // Rutas
 const authRouter = require("./routes/authRoutes");
+const userRoutes = require("./routes/userRoutes");
+
 app.use("/api/auth", authRouter);
+app.use("/api/users", userRoutes);
 
 // Endpoint raíz
 app.get("/", (req, res) => {
