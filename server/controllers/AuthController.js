@@ -4,6 +4,15 @@ const crypto = require("crypto");
 const User = require("../models/User");
 const sendEmail = require("../utils/sendEmail");
 
+// Helper para generar token
+const generarToken = (user) => {
+  return jwt.sign(
+    { id: user._id, email: user.email, rol: user.rol, username: user.username },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRE }
+  );
+};
+
 // Registro de usuarios
 exports.register = async (req, res, next) => {
   try {
@@ -49,6 +58,7 @@ exports.register = async (req, res, next) => {
       direccion,
       documento,
       fechaNacimiento,
+      rol
     });
 
     const token = jwt.sign(
@@ -101,7 +111,7 @@ exports.login = async (req, res, next) => {
      }
      // Actualiza ultimo acceso
     user.ultimoAcceso = new Date();
-    await user.save();
+    await User.findByIdAndUpdate(user._id, { ultimoAcceso: new Date() });
    
 
     const token = jwt.sign(
@@ -172,7 +182,7 @@ exports.resetPassword = async (req, res, next) => {
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
 
-    await user.save(); // guardar solo contraseña
+    await user.save(); 
 
     res.json({ success: true, message: "Contraseña actualizada correctamente" });
   } catch (err) {

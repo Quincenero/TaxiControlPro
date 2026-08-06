@@ -16,8 +16,10 @@ const documentSchema = new mongoose.Schema({
     enum: [
       "licencia de conducir",
       "seguro",
-      "tarjeta verde",
-      "licencia de taxi",
+      "cedula_verde",
+      "licencia_taxi",
+      "gnc_oblea",
+      "gnc_hidraulica",
       "vtv",
       "patente",
       "monotributo",

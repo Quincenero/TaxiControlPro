@@ -8,6 +8,9 @@ const { proteger, autorizar } = require("../middlewares/auth");
 // Obtener todos los vehículos (Admin y Usuario)
 router.get("/", proteger, autorizar("admin", "usuario"), vehicleController.obtenerVehiculos);
 
+// Obtener mi Vehiculo
+router.get("/my", proteger, vehicleController.obtenerMiVehiculo);
+
 // Obtener un vehículo por ID (Admin y Usuario)
 router.get("/:id", proteger, autorizar("admin", "usuario"), vehicleController.obtenerVehiculo);
 
@@ -21,6 +24,6 @@ router.put("/:id", proteger, autorizar("admin", "usuario"), vehicleController.ac
 router.delete("/:id", proteger, autorizar("admin"), vehicleController.eliminarVehiculo);
 
 // Obtener documentos asociados a un vehículo (Admin, Usuario y Conductor)
-router.get("/:id/documentos", proteger, autorizar("admin", "usuario", "conductor"), vehicleController.obtenerDocumentosVehiculo);
+router.get("/:id/documentos", proteger, autorizar("admin", "usuario"), vehicleController.obtenerDocumentosVehiculo);
 
 module.exports = router;

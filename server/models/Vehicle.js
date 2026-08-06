@@ -17,11 +17,20 @@ const vehicleSchema = new mongoose.Schema({
     required: [true, "El modelo es obligatorio"],
     trim: true
   },
-  año: {
+  anio: {
     type: Number,
     required: [true, "El año es obligatorio"],
-    min: [1900, "El año debe ser mayor a 1900"],
-    max: [new Date().getFullYear(), "El año no puede ser mayor al actual"]
+    min: [2000, "El año debe ser mayor a 2000"],
+    validate: {
+      validator: (value) => value <= new Date().getFullYear() + 1,
+      message: "El año no puede ser mayor al actual"
+    }
+  },
+
+  color: {
+    type: String,
+    required: [true, "El color es obligatorio"],
+    trim: true
   },
   patente: {
     type: String,
@@ -29,7 +38,7 @@ const vehicleSchema = new mongoose.Schema({
     unique: true,
     trim: true,
     uppercase: true,
-    match: [/^[A-Z0-9]{6,7}$/, "Formato de patente inválido"]
+    match: [/^[A-Z]{2}\d{3}[A-Z]{2}$/, "Formato de patente inválido"]
   },
   combustible: {
     type: String,
@@ -43,7 +52,7 @@ const vehicleSchema = new mongoose.Schema({
   },
   estado: {
     type: String,
-    enum: ["activo", "inactivo", "en_revision", "bloqueado"],
+    enum: ["activo", "inactivo", "en_revision", "fuera_de_servicio"],
     default: "activo"
   },
   fechaRegistro: {
@@ -62,12 +71,18 @@ const vehicleSchema = new mongoose.Schema({
 });
 
 vehicleSchema.methods.toJSON = function() {
-  const vehicle = this.toObject();
-  delete vehicle.__v;
+  const { __v, _id, ...vehicle } = this.toObject();
+  vehicle.id = _id;
   return vehicle;
 };
 
+vehicleSchema.pre('save', function(next) {
+  if (this.isModified('estado') && this.estado === 'en_revision') {
+    this.ultimaRevision = new Date();
+  }
+  next();
+});
 
-vehicleSchema.index({ usuario: 1 });
+vehicleSchema.index({ usuario: 1, patente:1 }, { unique: true });
 
 module.exports = mongoose.model('Vehicle', vehicleSchema);
